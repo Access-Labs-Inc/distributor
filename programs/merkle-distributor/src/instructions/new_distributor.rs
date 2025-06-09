@@ -6,10 +6,6 @@ use anchor_spl::{
 
 use crate::{error::ErrorCode, state::merkle_distributor::MerkleDistributor};
 
-const SECONDS_PER_HOUR: i64 = 3600; // 60 minutes * 60 seconds
-const HOURS_PER_DAY: i64 = 24;
-const SECONDS_PER_DAY: i64 = SECONDS_PER_HOUR * HOURS_PER_DAY; // 24 hours * 3600 seconds
-
 /// Accounts for [merkle_distributor::handle_new_distributor].
 #[derive(Accounts)]
 #[instruction(version: u64)]
@@ -20,17 +16,14 @@ pub struct NewDistributor<'info> {
         seeds = [
             b"MerkleDistributor".as_ref(),
             mint.key().to_bytes().as_ref(),
+            creator.key().to_bytes().as_ref(),
             version.to_le_bytes().as_ref()
         ],
         bump,
         space = MerkleDistributor::LEN,
-        payer = admin
+        payer = creator
     )]
     pub distributor: Account<'info, MerkleDistributor>,
-
-    /// Clawback receiver token account
-    #[account(mut, token::mint = mint)]
-    pub clawback_receiver: Account<'info, TokenAccount>,
 
     /// The mint to distribute.
     pub mint: Account<'info, Mint>,
@@ -40,14 +33,13 @@ pub struct NewDistributor<'info> {
         init,
         associated_token::mint = mint,
         associated_token::authority=distributor,
-        payer = admin,
+        payer = creator,
     )]
     pub token_vault: Account<'info, TokenAccount>,
 
-    /// Admin wallet, responsible for creating the distributor and paying for the transaction.
-    /// Also has the authority to set the clawback receiver and change itself.
+    /// Creator wallet, responsible for creating the distributor and paying for the transaction.    
     #[account(mut)]
-    pub admin: Signer<'info>,
+    pub creator: Signer<'info>,
 
     /// The [System] program.
     pub system_program: Program<'info, System>,
@@ -77,7 +69,6 @@ pub fn handle_new_distributor(
     max_num_nodes: u64,
     start_vesting_ts: i64,
     end_vesting_ts: i64,
-    clawback_start_ts: i64,
 ) -> Result<()> {
     let curr_ts = Clock::get()?.unix_timestamp;
 
@@ -89,20 +80,6 @@ pub fn handle_new_distributor(
     require!(
         start_vesting_ts > curr_ts && end_vesting_ts > curr_ts && clawback_start_ts > curr_ts,
         ErrorCode::TimestampsNotInFuture
-    );
-
-    require!(
-        clawback_start_ts > end_vesting_ts,
-        ErrorCode::ClawbackDuringVesting
-    );
-
-    // Ensure clawback_start_ts is at least one day after end_vesting_ts
-    require!(
-        clawback_start_ts
-            >= end_vesting_ts
-                .checked_add(SECONDS_PER_DAY)
-                .ok_or(ErrorCode::ArithmeticError)?,
-        ErrorCode::InsufficientClawbackDelay
     );
 
     let distributor = &mut ctx.accounts.distributor;
@@ -118,14 +95,13 @@ pub fn handle_new_distributor(
     distributor.num_nodes_claimed = 0;
     distributor.start_ts = start_vesting_ts;
     distributor.end_ts = end_vesting_ts;
-    distributor.clawback_start_ts = clawback_start_ts;
-    distributor.clawback_receiver = ctx.accounts.clawback_receiver.key();
+    distributor.creator = ctx.accounts.creator.key();
     distributor.admin = ctx.accounts.admin.key();
     distributor.clawed_back = false;
 
     // Note: might get truncated, do not rely on
     msg! {
-        "New distributor created with version = {}, mint={}, vault={} max_total_claim={}, max_nodes: {}, start_ts: {}, end_ts: {}, clawback_start: {}, clawback_receiver: {}",
+        "New distributor created with version = {}, mint={}, vault={} max_total_claim={}, max_nodes: {}, start_ts: {}, end_ts: {}",
             distributor.version,
             distributor.mint,
             ctx.accounts.token_vault.key(),
@@ -133,8 +109,6 @@ pub fn handle_new_distributor(
             distributor.max_num_nodes,
             distributor.start_ts,
             distributor.end_ts,
-            distributor.clawback_start_ts,
-            distributor.clawback_receiver
     };
 
     Ok(())

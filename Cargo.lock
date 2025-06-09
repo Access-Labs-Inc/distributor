@@ -13,6 +13,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "access-merkle-tree"
+version = "0.0.1"
+dependencies = [
+ "access-merkle-verify",
+ "csv",
+ "fast-math",
+ "hex",
+ "indexmap 2.1.0",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "solana-program",
+ "solana-sdk",
+ "thiserror",
+]
+
+[[package]]
+name = "access-merkle-verify"
+version = "0.0.1"
+dependencies = [
+ "solana-program",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1783,11 +1807,11 @@ checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 name = "jito-airdrop-api"
 version = "0.0.1"
 dependencies = [
+ "access-merkle-tree",
  "anchor-lang",
  "axum",
  "clap",
  "http",
- "jito-merkle-tree",
  "merkle-distributor",
  "serde",
  "serde_derive",
@@ -1806,37 +1830,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "jito-merkle-tree"
-version = "0.0.1"
-dependencies = [
- "csv",
- "fast-math",
- "hex",
- "indexmap 2.1.0",
- "jito-merkle-verify",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "solana-program",
- "solana-sdk",
- "thiserror",
-]
-
-[[package]]
-name = "jito-merkle-verify"
-version = "0.0.1"
-dependencies = [
- "solana-program",
-]
-
-[[package]]
 name = "jito-scripts"
 version = "0.0.1"
 dependencies = [
+ "access-merkle-tree",
  "anchor-lang",
  "anchor-spl",
  "clap",
- "jito-merkle-tree",
  "merkle-distributor",
  "solana-program",
  "solana-rpc-client",
@@ -2005,10 +2005,10 @@ dependencies = [
 name = "merkle-distributor"
 version = "0.0.1"
 dependencies = [
+ "access-merkle-verify",
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
- "jito-merkle-verify",
  "solana-program",
  "solana-security-txt",
 ]

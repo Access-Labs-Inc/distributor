@@ -5,24 +5,8 @@
     {
       "name": "newDistributor",
       "docs": [
-        "READ THE FOLLOWING:",
-        "",
-        "This instruction is susceptible to frontrunning that could result in loss of funds if not handled properly.",
-        "",
-        "An attack could look like:",
-        "- A legitimate user opens a new distributor.",
-        "- Someone observes the call to this instruction.",
-        "- They replace the clawback_receiver, admin, or time parameters with their own.",
-        "",
-        "One situation that could happen here is the attacker replaces the admin and clawback_receiver with their own",
-        "and sets the clawback_start_ts with the minimal time allowed. After clawback_start_ts has elapsed,",
-        "the attacker can steal all funds from the distributor to their own clawback_receiver account.",
-        "",
-        "HOW TO AVOID:",
-        "- When you call into this instruction, ensure your transaction succeeds.",
-        "- To be extra safe, after your transaction succeeds, read back the state of the created MerkleDistributor account and",
-        "assert the parameters are what you expect, most importantly the clawback_receiver and admin.",
-        "- If your transaction fails, double check the value on-chain matches what you expect."
+        "Creates a new MerkleDistributor.",
+        "After creating this MerkleDistributor, the token_vault should be seeded with max_total_claim tokens."
       ],
       "accounts": [
         {
@@ -46,20 +30,17 @@
                 "path": "mint"
               },
               {
+                "kind": "account",
+                "type": "publicKey",
+                "path": "creator"
+              },
+              {
                 "kind": "arg",
                 "type": "u64",
                 "path": "version"
               }
             ]
           }
-        },
-        {
-          "name": "clawbackReceiver",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "Clawback receiver token account"
-          ]
         },
         {
           "name": "mint",
@@ -78,12 +59,12 @@
           ]
         },
         {
-          "name": "admin",
+          "name": "creator",
           "isMut": true,
           "isSigner": true,
           "docs": [
-            "Admin wallet, responsible for creating the distributor and paying for the transaction.",
-            "Also has the authority to set the clawback receiver and change itself."
+            "Creator wallet, responsible for creating the distributor and paying for the transaction.",
+            "Also is set as the admin"
           ]
         },
         {
@@ -139,10 +120,6 @@
         },
         {
           "name": "endVestingTs",
-          "type": "i64"
-        },
-        {
-          "name": "clawbackStartTs",
           "type": "i64"
         }
       ]
@@ -380,36 +357,6 @@
       "args": []
     },
     {
-      "name": "setClawbackReceiver",
-      "accounts": [
-        {
-          "name": "distributor",
-          "isMut": true,
-          "isSigner": false,
-          "docs": [
-            "The [MerkleDistributor]."
-          ]
-        },
-        {
-          "name": "newClawbackAccount",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "New clawback account"
-          ]
-        },
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true,
-          "docs": [
-            "Admin signer"
-          ]
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "setAdmin",
       "accounts": [
         {
@@ -571,16 +518,9 @@
             "type": "i64"
           },
           {
-            "name": "clawbackStartTs",
+            "name": "creator",
             "docs": [
-              "Clawback start (Unix Timestamp)"
-            ],
-            "type": "i64"
-          },
-          {
-            "name": "clawbackReceiver",
-            "docs": [
-              "Clawback receiver"
+              "Creator wallet"
             ],
             "type": "publicKey"
           },
@@ -642,88 +582,58 @@
     },
     {
       "code": 6001,
-      "name": "StartTooFarInFuture",
-      "msg": "Deposit Start too far in future"
-    },
-    {
-      "code": 6002,
       "name": "InvalidProof",
       "msg": "Invalid Merkle proof."
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "ExceededMaxClaim",
       "msg": "Exceeded maximum claim amount"
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "MaxNodesExceeded",
       "msg": "Exceeded maximum node count"
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "Unauthorized",
       "msg": "Account is not authorized to execute this instruction"
     },
     {
-      "code": 6006,
+      "code": 6005,
       "name": "OwnerMismatch",
       "msg": "Token account owner did not match intended owner"
     },
     {
-      "code": 6007,
-      "name": "ClawbackDuringVesting",
-      "msg": "Clawback cannot be before vesting ends"
-    },
-    {
-      "code": 6008,
-      "name": "ClawbackBeforeStart",
-      "msg": "Attempted clawback before start"
-    },
-    {
-      "code": 6009,
+      "code": 6006,
       "name": "ClawbackAlreadyClaimed",
       "msg": "Clawback already claimed"
     },
     {
-      "code": 6010,
-      "name": "InsufficientClawbackDelay",
-      "msg": "Clawback start must be at least one day after vesting end"
-    },
-    {
-      "code": 6011,
-      "name": "SameClawbackReceiver",
-      "msg": "New and old Clawback receivers are identical"
-    },
-    {
-      "code": 6012,
+      "code": 6007,
       "name": "SameAdmin",
       "msg": "New and old admin are identical"
     },
     {
-      "code": 6013,
+      "code": 6008,
       "name": "ClaimExpired",
       "msg": "Claim window expired"
     },
     {
-      "code": 6014,
+      "code": 6009,
       "name": "ArithmeticError",
       "msg": "Arithmetic Error (overflow/underflow)"
     },
     {
-      "code": 6015,
+      "code": 6010,
       "name": "StartTimestampAfterEnd",
       "msg": "Start Timestamp cannot be after end Timestamp"
     },
     {
-      "code": 6016,
+      "code": 6011,
       "name": "TimestampsNotInFuture",
       "msg": "Timestamps cannot be in the past"
-    },
-    {
-      "code": 6017,
-      "name": "InvalidVersion",
-      "msg": "Airdrop Version Mismatch"
     }
   ]
 }
