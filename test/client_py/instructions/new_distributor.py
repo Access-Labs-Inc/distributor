@@ -15,26 +15,23 @@ class NewDistributorArgs(typing.TypedDict):
     max_num_nodes: int
     start_vesting_ts: int
     end_vesting_ts: int
-    clawback_start_ts: int
 
 
 layout = borsh.CStruct(
-    "version" / borsh.U8,
+    "version" / borsh.U64,
     "root" / borsh.U8[32],
     "max_total_claim" / borsh.U64,
     "max_num_nodes" / borsh.U64,
     "start_vesting_ts" / borsh.I64,
     "end_vesting_ts" / borsh.I64,
-    "clawback_start_ts" / borsh.I64,
 )
 
 
 class NewDistributorAccounts(typing.TypedDict):
     distributor: Pubkey
-    clawback_receiver: Pubkey
     mint: Pubkey
     token_vault: Pubkey
-    admin: Pubkey
+    creator: Pubkey
 
 
 def new_distributor(
@@ -45,12 +42,9 @@ def new_distributor(
 ) -> Instruction:
     keys: list[AccountMeta] = [
         AccountMeta(pubkey=accounts["distributor"], is_signer=False, is_writable=True),
-        AccountMeta(
-            pubkey=accounts["clawback_receiver"], is_signer=False, is_writable=True
-        ),
         AccountMeta(pubkey=accounts["mint"], is_signer=False, is_writable=False),
         AccountMeta(pubkey=accounts["token_vault"], is_signer=False, is_writable=True),
-        AccountMeta(pubkey=accounts["admin"], is_signer=True, is_writable=True),
+        AccountMeta(pubkey=accounts["creator"], is_signer=True, is_writable=True),
         AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
         AccountMeta(
             pubkey=ASSOCIATED_TOKEN_PROGRAM_ID, is_signer=False, is_writable=False
@@ -68,7 +62,6 @@ def new_distributor(
             "max_num_nodes": args["max_num_nodes"],
             "start_vesting_ts": args["start_vesting_ts"],
             "end_vesting_ts": args["end_vesting_ts"],
-            "clawback_start_ts": args["clawback_start_ts"],
         }
     )
     data = identifier + encoded_args

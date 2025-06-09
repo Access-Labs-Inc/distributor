@@ -1,5 +1,5 @@
 [package]
-name = "jito-merkle-tree"
+name = "access-merkle-tree"
 version = { workspace = true }
 edition = { workspace = true }
 
@@ -7,7 +7,7 @@ edition = { workspace = true }
 csv = { workspace = true }
 fast-math = { workspace = true }
 indexmap = { workspace = true }
-jito-merkle-verify = { workspace = true }
+access-merkle-verify = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 solana-program = { workspace = true }

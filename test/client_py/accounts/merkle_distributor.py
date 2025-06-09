@@ -23,8 +23,7 @@ class MerkleDistributorJSON(typing.TypedDict):
     num_nodes_claimed: int
     start_ts: int
     end_ts: int
-    clawback_start_ts: int
-    clawback_receiver: str
+    creator: str
     admin: str
     clawed_back: bool
 
@@ -34,7 +33,7 @@ class MerkleDistributor:
     discriminator: typing.ClassVar = b"Mw\x8bFT\xf7\x0c\x1a"
     layout: typing.ClassVar = borsh.CStruct(
         "bump" / borsh.U8,
-        "version" / borsh.U8,
+        "version" / borsh.U64,
         "root" / borsh.U8[32],
         "mint" / BorshPubkey,
         "token_vault" / BorshPubkey,
@@ -44,8 +43,7 @@ class MerkleDistributor:
         "num_nodes_claimed" / borsh.U64,
         "start_ts" / borsh.I64,
         "end_ts" / borsh.I64,
-        "clawback_start_ts" / borsh.I64,
-        "clawback_receiver" / BorshPubkey,
+        "creator" / BorshPubkey,
         "admin" / BorshPubkey,
         "clawed_back" / borsh.Bool,
     )
@@ -60,8 +58,7 @@ class MerkleDistributor:
     num_nodes_claimed: int
     start_ts: int
     end_ts: int
-    clawback_start_ts: int
-    clawback_receiver: Pubkey
+    creator: Pubkey
     admin: Pubkey
     clawed_back: bool
 
@@ -120,8 +117,7 @@ class MerkleDistributor:
             num_nodes_claimed=dec.num_nodes_claimed,
             start_ts=dec.start_ts,
             end_ts=dec.end_ts,
-            clawback_start_ts=dec.clawback_start_ts,
-            clawback_receiver=dec.clawback_receiver,
+            creator=dec.creator,
             admin=dec.admin,
             clawed_back=dec.clawed_back,
         )
@@ -139,8 +135,7 @@ class MerkleDistributor:
             "num_nodes_claimed": self.num_nodes_claimed,
             "start_ts": self.start_ts,
             "end_ts": self.end_ts,
-            "clawback_start_ts": self.clawback_start_ts,
-            "clawback_receiver": str(self.clawback_receiver),
+            "creator": str(self.creator),
             "admin": str(self.admin),
             "clawed_back": self.clawed_back,
         }
@@ -159,8 +154,7 @@ class MerkleDistributor:
             num_nodes_claimed=obj["num_nodes_claimed"],
             start_ts=obj["start_ts"],
             end_ts=obj["end_ts"],
-            clawback_start_ts=obj["clawback_start_ts"],
-            clawback_receiver=Pubkey.from_string(obj["clawback_receiver"]),
+            creator=Pubkey.from_string(obj["creator"]),
             admin=Pubkey.from_string(obj["admin"]),
             clawed_back=obj["clawed_back"],
         )

@@ -79,6 +79,7 @@ pub fn handle_claim_locked(ctx: Context<ClaimLocked>) -> Result<()> {
     let seeds = [
         b"MerkleDistributor".as_ref(),
         &distributor.mint.to_bytes(),
+        &distributor.creator.to_bytes(),
         &distributor.version.to_le_bytes(),
         &[ctx.accounts.distributor.bump],
     ];

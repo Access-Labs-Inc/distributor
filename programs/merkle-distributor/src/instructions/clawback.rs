@@ -49,11 +49,10 @@ pub fn handle_clawback(ctx: Context<Clawback>) -> Result<()> {
 
     require!(!distributor.clawed_back, ErrorCode::ClawbackAlreadyClaimed);
 
-    let curr_ts = Clock::get()?.unix_timestamp;
-
     let seeds = [
         b"MerkleDistributor".as_ref(),
         &distributor.mint.to_bytes(),
+        &distributor.creator.to_bytes(),
         &distributor.version.to_le_bytes(),
         &[ctx.accounts.distributor.bump],
     ];

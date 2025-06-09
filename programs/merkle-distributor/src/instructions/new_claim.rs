@@ -130,7 +130,7 @@ pub fn handle_new_claim(
     let seeds = [
         b"MerkleDistributor".as_ref(),
         &distributor.mint.to_bytes(),
-        &distributor.creator.to_le_bytes(),
+        &distributor.creator.to_bytes(),
         &distributor.version.to_le_bytes(),
         &[ctx.accounts.distributor.bump],
     ];

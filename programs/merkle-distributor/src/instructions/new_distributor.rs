@@ -30,10 +30,8 @@ pub struct NewDistributor<'info> {
 
     /// Token vault
     #[account(
-        init,
         associated_token::mint = mint,
         associated_token::authority=distributor,
-        payer = creator,
     )]
     pub token_vault: Account<'info, TokenAccount>,
 
@@ -78,7 +76,7 @@ pub fn handle_new_distributor(
     );
     // New distributor parameters must all be set in the future
     require!(
-        start_vesting_ts > curr_ts && end_vesting_ts > curr_ts && clawback_start_ts > curr_ts,
+        start_vesting_ts > curr_ts && end_vesting_ts > curr_ts,
         ErrorCode::TimestampsNotInFuture
     );
 
@@ -96,7 +94,7 @@ pub fn handle_new_distributor(
     distributor.start_ts = start_vesting_ts;
     distributor.end_ts = end_vesting_ts;
     distributor.creator = ctx.accounts.creator.key();
-    distributor.admin = ctx.accounts.admin.key();
+    distributor.admin = ctx.accounts.creator.key();
     distributor.clawed_back = false;
 
     // Note: might get truncated, do not rely on

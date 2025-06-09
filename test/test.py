@@ -17,6 +17,7 @@ from solders.clock import Clock
 from solders.transaction import TransactionError, VersionedTransaction
 from client_py.program_id import PROGRAM_ID
 from solders.token.state import TokenAccount, TokenAccountState, Mint
+from spl.token.instructions import create_associated_token_account
 
 from pathlib import Path
 from pytest import mark, raises
@@ -51,9 +52,6 @@ async def init_test_accounts(program_id) -> TestHook:
         close_authority=None,
     )
 
-    (distributor, bump) = get_distributor_pda(mint_address, program_id, 0)
-    distributor_ata = get_associated_token_address(distributor, mint_address)
-
     accounts = [
         (
             get_associated_token_address(clawback_keypair.pubkey(), mint_address),
@@ -82,6 +80,11 @@ async def init_test_accounts(program_id) -> TestHook:
     ]
 
     context = await start_anchor(Path("../"), accounts=accounts)
+
+    payer = context.payer
+    distributor = get_distributor_pda(mint_address,  program_id, payer.pubkey(), 0)[0]
+    distributor_ata = get_associated_token_address(distributor, mint_address)
+
     return TestHook(
         mint_address, clawback_keypair, distributor_ata, program_id, context
     )
@@ -94,33 +97,34 @@ async def test_new_distributor():
     context = testhook.context
     program_id = testhook.program_id
     mint = testhook.mint
-    clawback_address = get_associated_token_address(
-        testhook.clawback_keypair.pubkey(), mint
-    )
 
-    (distributor, bump) = get_distributor_pda(mint, program_id)
-    payer = context.payer
+    payer = context.payer 
+    (distributor, bump) = get_distributor_pda(mint, program_id, payer.pubkey(), 0)
+    ata_creation_ix = create_associated_token_account(
+        payer=payer.pubkey(),
+        owner=distributor,
+        mint=mint
+    )   
 
+    curr_ts = await context.banks_client.get_clock()
     distributor = new_distributor(
         {
             "version": 0,
             "root": [0] * 32,
             "max_total_claim": 100_00_00,
             "max_num_nodes": 1,
-            "start_vesting_ts": 1,
-            "end_vesting_ts": 10,
-            "clawback_start_ts": 11,
+            "start_vesting_ts": curr_ts.unix_timestamp + 100000,
+            "end_vesting_ts": curr_ts.unix_timestamp + 200000,
         },
         {
             "distributor": distributor,
             "token_vault": get_associated_token_address(distributor, mint),
-            "clawback_receiver": clawback_address,
             "mint": mint,
-            "admin": payer.pubkey(),
+            "creator": payer.pubkey(),
         },
     )
 
-    ixs = [distributor]
+    ixs = [ata_creation_ix, distributor]
     blockhash = context.last_blockhash
     msg = Message.new_with_blockhash(ixs, payer.pubkey(), blockhash)
     tx = VersionedTransaction(msg, [payer])
@@ -141,46 +145,45 @@ async def test_clawback():
     distributor_ata = test_hook.distributor_ata
 
     # setup distributor
-    (distributor, bump) = get_distributor_pda(mint, program_id, 0)
     payer = context.payer
-
+    (distributor, bump) = get_distributor_pda(mint, program_id, payer.pubkey(), 0)
+    ata_creation_ix = create_associated_token_account(
+        payer=payer.pubkey(),
+        owner=distributor,
+        mint=mint
+    )
+    
+    curr_ts = await context.banks_client.get_clock()
     new_distributor_ix = new_distributor(
         {
             "version": 0,
             "root": [0] * 32,
             "max_total_claim": 100_00_00,
             "max_num_nodes": 1,
-            "start_vesting_ts": 1,
-            "end_vesting_ts": 10,
-            "clawback_start_ts": 11,
+            "start_vesting_ts": curr_ts.unix_timestamp + 100000,
+            "end_vesting_ts": curr_ts.unix_timestamp + 200000,
         },
         {
             "distributor": distributor,
             "token_vault": get_associated_token_address(distributor, mint),
-            "clawback_receiver": clawback_address,
             "mint": mint,
-            "admin": payer.pubkey(),
+            "creator": payer.pubkey(),
         },
     )
 
-    ixs = [new_distributor_ix]
-    blockhash = context.last_blockhash
-    msg = Message.new_with_blockhash(ixs, payer.pubkey(), blockhash)
-
-    payer = context.payer
     clawback_ix = clawback(
         {
             "distributor": distributor,
             "from_": distributor_ata,
             "to": clawback_address,
-            "claimant": test_hook.clawback_keypair.pubkey(),
+            "admin": payer.pubkey(),
         }
     )
 
-    ixs = [new_distributor_ix, clawback_ix]
+    ixs = [ata_creation_ix, new_distributor_ix, clawback_ix]
     blockhash = context.last_blockhash
     msg = Message.new_with_blockhash(ixs, payer.pubkey(), blockhash)
-    tx = VersionedTransaction(msg, [payer, test_hook.clawback_keypair])
+    tx = VersionedTransaction(msg, [payer])
     client = context.banks_client
     await client.process_transaction(tx)
 
@@ -191,12 +194,10 @@ async def setup_clawback_test_case() -> (TestHook, List[Instruction]):
     context = test_hook.context
     program_id = test_hook.program_id
     mint = test_hook.mint
-    clawback_address = get_associated_token_address(
-        test_hook.clawback_keypair.pubkey(), mint
-    )
 
     # setup distributor
-    (distributor, bump) = get_distributor_pda(mint, program_id)
+    payer = context.payer
+    (distributor, bump) = get_distributor_pda(mint, program_id, payer.pubkey(), 0)
     curr_ts = int(time())
 
     new_distributor_ix = new_distributor(
@@ -207,104 +208,16 @@ async def setup_clawback_test_case() -> (TestHook, List[Instruction]):
             "max_num_nodes": 1,
             "start_vesting_ts": curr_ts,
             "end_vesting_ts": curr_ts + 100_000,
-            "clawback_start_ts": curr_ts + 100_000 + 1,
         },
         {
             "distributor": distributor,
             "token_vault": get_associated_token_address(distributor, mint),
-            "clawback_receiver": clawback_address,
             "mint": mint,
-            "admin": context.payer.pubkey(),
+            "creator": context.payer.pubkey(),
         },
     )
 
     return test_hook, new_distributor_ix
-
-
-@mark.asyncio
-async def test_clawback_before_claim_expiry():
-    """Test that clawback instruction fails before the claim expiry window"""
-    test_hook, new_distributor_ix = await setup_clawback_test_case()
-    context = test_hook.context
-
-    clawback_address = get_associated_token_address(
-        test_hook.clawback_keypair.pubkey(), test_hook.mint
-    )
-
-    clawback_ix = clawback(
-        {
-            "distributor": get_distributor_pda(test_hook.mint, test_hook.program_id, 0)[
-                0
-            ],
-            "from_": test_hook.distributor_ata,
-            "to": clawback_address,
-            "claimant": test_hook.clawback_keypair.pubkey(),
-        }
-    )
-
-    ixs = [new_distributor_ix, clawback_ix]
-    blockhash = context.last_blockhash
-    msg = Message.new_with_blockhash(ixs, context.payer.pubkey(), blockhash)
-    tx = VersionedTransaction(msg, [context.payer, test_hook.clawback_keypair])
-    client = context.banks_client
-
-    with raises(TransactionError) as e:
-        await client.process_transaction(tx)
-    assert "Error processing Instruction 1: custom program error: 0x1778" in str(
-        e.value
-    )
-
-
-@mark.asyncio
-async def test_clawback_after():
-    """Test that calling the Clawback instruction works after the clawback window begins"""
-    test_hook, new_distributor_ix = await setup_clawback_test_case()
-    context = test_hook.context
-
-    clawback_address = get_associated_token_address(
-        test_hook.clawback_keypair.pubkey(), test_hook.mint
-    )
-
-    curr_ts = int(time())
-    client = context.banks_client
-    # now warp time to 6 months after curr_ts
-    six_months_from_now = curr_ts + 6 * 31 * 24 * 60 * 60
-    current_clock = await client.get_clock()
-
-    clawback_ix = clawback(
-        {
-            "distributor": get_distributor_pda(test_hook.mint, test_hook.program_id, 0)[
-                0
-            ],
-            "from_": test_hook.distributor_ata,
-            "to": clawback_address,
-            "claimant": test_hook.clawback_keypair.pubkey(),
-        }
-    )
-
-    # warp to one slot and 6 months after claim expiry window
-    new_clock = Clock(
-        slot=current_clock.slot + 1,
-        epoch_start_timestamp=current_clock.epoch_start_timestamp,
-        epoch=current_clock.epoch,
-        leader_schedule_epoch=current_clock.leader_schedule_epoch,
-        unix_timestamp=six_months_from_now,
-    )
-    context.set_clock(new_clock)
-
-    ixs = [new_distributor_ix, clawback_ix]
-    blockhash = context.last_blockhash
-    msg = Message.new_with_blockhash(ixs, context.payer.pubkey(), blockhash)
-    tx = VersionedTransaction(msg, [context.payer, test_hook.clawback_keypair])
-    client = context.banks_client
-
-    await client.process_transaction(tx)
-
-@mark.asyncio
-def test_claim():
-    """Test that claim works correctly"""
-
-
 
 @mark.asyncio
 def test_load_merkle_tree():
