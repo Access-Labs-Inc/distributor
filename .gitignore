@@ -144,4 +144,4 @@ src/idls/
 data/distributor-info.json
 
 # Test keypairs
-test-keypairs/
+test_keypairs/*
