@@ -329,12 +329,12 @@
           ]
         },
         {
-          "name": "claimant",
-          "isMut": false,
+          "name": "admin",
+          "isMut": true,
           "isSigner": true,
           "docs": [
-            "Claimant account",
-            "Anyone can claw back the funds"
+            "Admin account",
+            "Only admin can claw back"
           ]
         },
         {

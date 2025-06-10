@@ -30,7 +30,7 @@ security_txt! {
     source_code: "https://github.com/Access-Labs-Inc/merkle-distributor"
 }
 
-declare_id!("ADisxssgCUyrQPXVnaPzxqbkxRksnuecjYnKMGJvF7Gd");
+declare_id!("ADis3cccJHS6dmj8MPCG1NGGuXBN2ZSaaXFwKKU7UUgF");
 
 #[program]
 pub mod merkle_distributor {

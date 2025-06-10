@@ -1,15 +1,15 @@
-extern crate jito_merkle_tree;
+extern crate access_merkle_tree;
 extern crate merkle_distributor;
 
 use std::path::PathBuf;
 
-use anchor_lang::{prelude::Pubkey, AccountDeserialize, InstructionData, Key, ToAccountMetas};
-use anchor_spl::token;
-use clap::{Parser, Subcommand};
-use jito_merkle_tree::{
+use access_merkle_tree::{
     airdrop_merkle_tree::AirdropMerkleTree,
     utils::{get_claim_status_pda, get_merkle_distributor_pda},
 };
+use anchor_lang::{prelude::Pubkey, AccountDeserialize, InstructionData, Key, ToAccountMetas};
+use anchor_spl::token;
+use clap::{Parser, Subcommand};
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::instruction::Instruction;
 use solana_rpc_client::rpc_client::RpcClient;
@@ -51,6 +51,10 @@ pub struct Args {
     /// Priority fee
     #[clap(long, env)]
     pub priority: Option<u64>,
+
+    /// Clawback receiver token account
+    #[clap(long, env)]
+    pub clawback_receiver_token_account: Option<Pubkey>,
 }
 
 // Subcommands
@@ -61,11 +65,19 @@ pub enum Commands {
     /// Create a new instance of a merkle distributor
     NewDistributor(NewDistributorArgs),
     /// Clawback tokens from merkle distributor
-    #[clap(hide = true)]
     Clawback(ClawbackArgs),
     /// Create a Merkle tree, given a CSV of recipients
     CreateMerkleTree(CreateMerkleTreeArgs),
     SetAdmin(SetAdminArgs),
+    /// Print the derived distributor PDA
+    DistributorPda,
+}
+
+#[derive(Parser, Debug)]
+pub struct ClawbackArgs {
+    /// Distributor PDA
+    #[clap(long, env)]
+    pub distributor: Pubkey,
 }
 
 // NewClaim and Claim subcommand args
@@ -74,14 +86,17 @@ pub struct ClaimArgs {
     /// Merkle distributor path
     #[clap(long, env)]
     pub merkle_tree_path: PathBuf,
+    /// Distributor PDA
+    #[clap(long, env)]
+    pub distributor: Pubkey,
 }
 
 // NewDistributor subcommand args
 #[derive(Parser, Debug)]
 pub struct NewDistributorArgs {
-    /// Clawback receiver token account
+    /// Merkle distributor path
     #[clap(long, env)]
-    pub clawback_receiver_token_account: Pubkey,
+    pub merkle_tree_path: PathBuf,
 
     /// Lockup timestamp start
     #[clap(long, env)]
@@ -90,20 +105,6 @@ pub struct NewDistributorArgs {
     /// Lockup timestamp end (unix timestamp)
     #[clap(long, env)]
     pub end_vesting_ts: i64,
-
-    /// Merkle distributor path
-    #[clap(long, env)]
-    pub merkle_tree_path: PathBuf,
-
-    /// When to make the clawback period start. Must be at least a day after the end_vesting_ts
-    #[clap(long, env)]
-    pub clawback_start_ts: i64,
-}
-
-#[derive(Parser, Debug)]
-pub struct ClawbackArgs {
-    #[clap(long, env)]
-    pub clawback_keypair_path: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -119,6 +120,11 @@ pub struct CreateMerkleTreeArgs {
 
 #[derive(Parser, Debug)]
 pub struct SetAdminArgs {
+    /// Distributor PDA
+    #[clap(long, env)]
+    pub distributor: Pubkey,
+
+    /// New admin
     #[clap(long, env)]
     pub new_admin: Pubkey,
 }
@@ -140,6 +146,9 @@ fn main() {
         Commands::SetAdmin(set_admin_args) => {
             process_set_admin(&args, set_admin_args);
         }
+        Commands::DistributorPda => {
+            process_distributor_pda(&args);
+        }
     }
 }
 
@@ -151,13 +160,11 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
     let merkle_tree = AirdropMerkleTree::new_from_file(&claim_args.merkle_tree_path)
         .expect("failed to load merkle tree from file");
 
-    let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
-
     // Get user's node in claim
     let node = merkle_tree.get_node(&claimant);
 
-    let (claim_status_pda, _bump) = get_claim_status_pda(&args.program_id, &claimant, &distributor);
+    let (claim_status_pda, _bump) =
+        get_claim_status_pda(&args.program_id, &claimant, &claim_args.distributor);
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
@@ -183,9 +190,9 @@ fn process_new_claim(args: &Args, claim_args: &ClaimArgs) {
     let new_claim_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::NewClaim {
-            distributor,
+            distributor: claim_args.distributor,
             claim_status: claim_status_pda,
-            from: get_associated_token_address(&distributor, &args.mint),
+            from: get_associated_token_address(&claim_args.distributor, &args.mint),
             to: claimant_ata,
             claimant,
             token_program: token::ID,
@@ -218,12 +225,11 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
 
     let priority_fee = args.priority.unwrap_or(0);
 
-    let (distributor, bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
-    println!("distributor pubkey {}", distributor);
+    println!("args: {:?}", args);
 
-    let (claim_status_pda, _bump) = get_claim_status_pda(&args.program_id, &claimant, &distributor);
-    println!("claim pda: {claim_status_pda}, bump: {bump}");
+    let (claim_status_pda, _bump) =
+        get_claim_status_pda(&args.program_id, &claimant, &claim_args.distributor);
+    println!("claim pda: {claim_status_pda}");
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
@@ -247,9 +253,9 @@ fn process_claim(args: &Args, claim_args: &ClaimArgs) {
     let claim_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::ClaimLocked {
-            distributor,
+            distributor: claim_args.distributor,
             claim_status: claim_status_pda,
-            from: get_associated_token_address(&distributor, &args.mint),
+            from: get_associated_token_address(&claim_args.distributor, &args.mint),
             to: claimant_ata,
             claimant,
             token_program: token::ID,
@@ -303,12 +309,6 @@ fn check_distributor_onchain_matches(
         if distributor.end_ts != new_distributor_args.end_vesting_ts {
             return Err("end_ts mismatch");
         }
-        if distributor.clawback_start_ts != new_distributor_args.clawback_start_ts {
-            return Err("clawback_start_ts mismatch");
-        }
-        if distributor.clawback_receiver != new_distributor_args.clawback_receiver_token_account {
-            return Err("clawback_receiver mismatch");
-        }
         if distributor.admin != pubkey {
             return Err("admin mismatch");
         }
@@ -322,8 +322,12 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
     let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
     let merkle_tree = AirdropMerkleTree::new_from_file(&new_distributor_args.merkle_tree_path)
         .expect("failed to read");
-    let (distributor_pubkey, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let (distributor_pubkey, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        &keypair.pubkey(),
+        args.airdrop_version,
+    );
     let token_vault = get_associated_token_address(&distributor_pubkey, &args.mint);
 
     if let Some(account) = client
@@ -340,19 +344,21 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
         ).expect("merkle root on-chain does not match provided arguments! Confirm admin and clawback parameters to avoid loss of funds!");
     }
 
-    println!("creating new distributor with args: {new_distributor_args:#?}");
+    println!(
+        "creating new distributor with args: {new_distributor_args:#?}, address: {}",
+        distributor_pubkey
+    );
 
     let new_distributor_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::NewDistributor {
-            clawback_receiver: new_distributor_args.clawback_receiver_token_account,
+            distributor: distributor_pubkey,
             mint: args.mint,
             token_vault,
-            distributor: distributor_pubkey,
+            creator: keypair.pubkey(),
             system_program: solana_program::system_program::id(),
             associated_token_program: spl_associated_token_account::ID,
             token_program: token::ID,
-            admin: keypair.pubkey(),
         }
         .to_account_metas(None),
         data: merkle_distributor::instruction::NewDistributor {
@@ -362,7 +368,6 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
             max_num_nodes: merkle_tree.max_num_nodes,
             start_vesting_ts: new_distributor_args.start_vesting_ts,
             end_vesting_ts: new_distributor_args.end_vesting_ts,
-            clawback_start_ts: new_distributor_args.clawback_start_ts,
         }
         .data(),
     };
@@ -402,26 +407,27 @@ fn process_new_distributor(args: &Args, new_distributor_args: &NewDistributorArg
 
 fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
     let payer_keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
-    let clawback_keypair = read_keypair_file(&clawback_args.clawback_keypair_path)
-        .expect("Failed reading keypair file");
-
-    let clawback_ata = get_associated_token_address(&clawback_keypair.pubkey(), &args.mint);
+    let clawback_receiver_token_account = args
+        .clawback_receiver_token_account
+        .unwrap_or(payer_keypair.pubkey());
+    let clawback_ata = get_associated_token_address(&clawback_receiver_token_account, &args.mint);
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
-
-    let from = get_associated_token_address(&distributor, &args.mint);
+    let from = get_associated_token_address(&clawback_args.distributor, &args.mint);
     println!("from: {from}");
+    println!("distributor: {}", clawback_args.distributor);
+    println!("from: {}", from);
+    println!("to: {}", clawback_ata);
+    println!("payer: {}", payer_keypair.pubkey());
 
     let clawback_ix = Instruction {
         program_id: args.program_id,
         accounts: merkle_distributor::accounts::Clawback {
-            distributor,
+            distributor: clawback_args.distributor,
             from,
             to: clawback_ata,
-            claimant: clawback_keypair.pubkey(),
+            admin: payer_keypair.pubkey(),
             system_program: solana_program::system_program::ID,
             token_program: token::ID,
         }
@@ -432,7 +438,7 @@ fn process_clawback(args: &Args, clawback_args: &ClawbackArgs) {
     let tx = Transaction::new_signed_with_payer(
         &[clawback_ix],
         Some(&payer_keypair.pubkey()),
-        &[&payer_keypair, &clawback_keypair],
+        &[&payer_keypair],
         client.get_latest_blockhash().unwrap(),
     );
 
@@ -453,8 +459,12 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
 
     let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
 
-    let (distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let (distributor, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        &set_admin_args.distributor,
+        args.airdrop_version,
+    );
 
     let set_admin_ix = Instruction {
         program_id: args.program_id,
@@ -479,4 +489,15 @@ fn process_set_admin(args: &Args, set_admin_args: &SetAdminArgs) {
         .unwrap();
 
     println!("Successfully set admin! signature: {signature:#?}");
+}
+
+fn process_distributor_pda(args: &Args) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let (distributor_pubkey, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        &keypair.pubkey(),
+        args.airdrop_version,
+    );
+    println!("{distributor_pubkey}");
 }
