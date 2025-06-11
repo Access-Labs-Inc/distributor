@@ -1,3 +1,4 @@
+use access_merkle_verify::verify;
 use anchor_lang::{
     context::Context, prelude::*, solana_program::hash::hashv, system_program::System, Accounts,
     Key, Result,
@@ -6,7 +7,6 @@ use anchor_spl::{
     token,
     token::{Token, TokenAccount},
 };
-use jito_merkle_verify::verify;
 
 use crate::{
     error::ErrorCode,
@@ -130,6 +130,7 @@ pub fn handle_new_claim(
     let seeds = [
         b"MerkleDistributor".as_ref(),
         &distributor.mint.to_bytes(),
+        &distributor.creator.to_bytes(),
         &distributor.version.to_le_bytes(),
         &[ctx.accounts.distributor.bump],
     ];

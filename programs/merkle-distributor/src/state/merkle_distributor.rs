@@ -29,10 +29,8 @@ pub struct MerkleDistributor {
     pub start_ts: i64,
     /// Lockup time end (Unix Timestamp)
     pub end_ts: i64,
-    /// Clawback start (Unix Timestamp)
-    pub clawback_start_ts: i64,
-    /// Clawback receiver
-    pub clawback_receiver: Pubkey,
+    /// Creatorwallet
+    pub creator: Pubkey,
     /// Admin wallet
     pub admin: Pubkey,
     /// Whether or not the distributor has been clawed back

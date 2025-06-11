@@ -142,3 +142,6 @@ __pycache__/
 artifacts/
 src/idls/
 data/distributor-info.json
+
+# Test keypairs
+test_keypairs/*

@@ -1,5 +1,5 @@
 [package]
-name = "jito-airdrop-api"
+name = "access-airdrop-api"
 version = { workspace = true }
 edition = { workspace = true }
 
@@ -8,7 +8,7 @@ anchor-lang = { workspace = true }
 axum = { workspace = true }
 clap = { workspace = true }
 http = { workspace = true }
-jito-merkle-tree = { path = "../merkle-tree" }
+access-merkle-tree = { path = "../merkle-tree" }
 merkle-distributor = { path = "../programs/merkle-distributor" }
 serde = { workspace = true }
 serde_derive = { workspace = true }

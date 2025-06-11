@@ -22,38 +22,20 @@ pub mod state;
 security_txt! {
     // Required fields
     name: "Merkle Distributor",
-    project_url: "https://jito.network/",
-    contacts: "email:support@jito.network",
-    policy: "https://github.com/jito-foundation/distributor",
+    project_url: "https://accessprotocol.co",
+    contacts: "email:support@accessprotocol.co",
+    policy: "https://github.com/Access-Labs-Inc/merkle-distributor",
     // Optional Fields
     preferred_languages: "en",
-    source_code: "https://github.com/jito-foundation/distributor"
+    source_code: "https://github.com/Access-Labs-Inc/merkle-distributor"
 }
 
-declare_id!("mERKcfxMC5SqJn4Ld4BUris3WKZZ1ojjWJ3A3J5CKxv");
+declare_id!("ADis3cccJHS6dmj8MPCG1NGGuXBN2ZSaaXFwKKU7UUgF");
 
 #[program]
 pub mod merkle_distributor {
     use super::*;
 
-    /// READ THE FOLLOWING:
-    ///
-    /// This instruction is susceptible to frontrunning that could result in loss of funds if not handled properly.
-    ///
-    /// An attack could look like:
-    /// - A legitimate user opens a new distributor.
-    /// - Someone observes the call to this instruction.
-    /// - They replace the clawback_receiver, admin, or time parameters with their own.
-    ///
-    /// One situation that could happen here is the attacker replaces the admin and clawback_receiver with their own
-    /// and sets the clawback_start_ts with the minimal time allowed. After clawback_start_ts has elapsed,
-    /// the attacker can steal all funds from the distributor to their own clawback_receiver account.
-    ///
-    /// HOW TO AVOID:
-    /// - When you call into this instruction, ensure your transaction succeeds.
-    /// - To be extra safe, after your transaction succeeds, read back the state of the created MerkleDistributor account and
-    ///   assert the parameters are what you expect, most importantly the clawback_receiver and admin.
-    /// - If your transaction fails, double check the value on-chain matches what you expect.
     #[allow(clippy::result_large_err)]
     pub fn new_distributor(
         ctx: Context<NewDistributor>,
@@ -63,7 +45,6 @@ pub mod merkle_distributor {
         max_num_nodes: u64,
         start_vesting_ts: i64,
         end_vesting_ts: i64,
-        clawback_start_ts: i64,
     ) -> Result<()> {
         handle_new_distributor(
             ctx,
@@ -73,7 +54,6 @@ pub mod merkle_distributor {
             max_num_nodes,
             start_vesting_ts,
             end_vesting_ts,
-            clawback_start_ts,
         )
     }
 
@@ -95,11 +75,6 @@ pub mod merkle_distributor {
     #[allow(clippy::result_large_err)]
     pub fn clawback(ctx: Context<Clawback>) -> Result<()> {
         handle_clawback(ctx)
-    }
-
-    #[allow(clippy::result_large_err)]
-    pub fn set_clawback_receiver(ctx: Context<SetClawbackReceiver>) -> Result<()> {
-        handle_set_clawback_receiver(ctx)
     }
 
     #[allow(clippy::result_large_err)]

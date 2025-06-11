@@ -1,5 +1,5 @@
 [package]
-name = "jito-merkle-verify"
+name = "access-merkle-verify"
 version = { workspace = true }
 edition = { workspace = true }
 

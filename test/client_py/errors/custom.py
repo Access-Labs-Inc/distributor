@@ -11,176 +11,132 @@ class InsufficientUnlockedTokens(ProgramError):
     msg = "Insufficient unlocked tokens"
 
 
-class DepositStartTooFarInFuture(ProgramError):
-    def __init__(self) -> None:
-        super().__init__(6001, "Deposit Start too far in future")
-
-    code = 6001
-    name = "DepositStartTooFarInFuture"
-    msg = "Deposit Start too far in future"
-
-
 class InvalidProof(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6002, "Invalid Merkle proof.")
+        super().__init__(6001, "Invalid Merkle proof.")
 
-    code = 6002
+    code = 6001
     name = "InvalidProof"
     msg = "Invalid Merkle proof."
 
 
 class ExceededMaxClaim(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6003, "Exceeded maximum claim amount.")
+        super().__init__(6002, "Exceeded maximum claim amount")
+
+    code = 6002
+    name = "ExceededMaxClaim"
+    msg = "Exceeded maximum claim amount"
+
+
+class MaxNodesExceeded(ProgramError):
+    def __init__(self) -> None:
+        super().__init__(6003, "Exceeded maximum node count")
 
     code = 6003
-    name = "ExceededMaxClaim"
-    msg = "Exceeded maximum claim amount."
-
-
-class ExceededMaxNumNodes(ProgramError):
-    def __init__(self) -> None:
-        super().__init__(6004, "Exceeded maximum number of claimed nodes.")
-
-    code = 6004
-    name = "ExceededMaxNumNodes"
-    msg = "Exceeded maximum number of claimed nodes."
+    name = "MaxNodesExceeded"
+    msg = "Exceeded maximum node count"
 
 
 class Unauthorized(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6005, "Account is not authorized to execute this instruction")
+        super().__init__(6004, "Account is not authorized to execute this instruction")
 
-    code = 6005
+    code = 6004
     name = "Unauthorized"
     msg = "Account is not authorized to execute this instruction"
 
 
 class OwnerMismatch(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6006, "Token account owner did not match intended owner")
+        super().__init__(6005, "Token account owner did not match intended owner")
 
-    code = 6006
+    code = 6005
     name = "OwnerMismatch"
     msg = "Token account owner did not match intended owner"
 
 
-class ClawbackBeforeVestingEnd(ProgramError):
-    def __init__(self) -> None:
-        super().__init__(6007, "Clawback cannot be before vesting ends")
-
-    code = 6007
-    name = "ClawbackBeforeVestingEnd"
-    msg = "Clawback cannot be before vesting ends"
-
-
-class ClawbackBeforeStart(ProgramError):
-    def __init__(self) -> None:
-        super().__init__(6008, "Attempting to clawback before clawback start")
-
-    code = 6008
-    name = "ClawbackBeforeStart"
-    msg = "Attempting to clawback before clawback start"
-
-
 class ClawbackAlreadyClaimed(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6009, "Clawback already claimed")
+        super().__init__(6006, "Clawback already claimed")
 
-    code = 6009
+    code = 6006
     name = "ClawbackAlreadyClaimed"
     msg = "Clawback already claimed"
 
 
-class ClawbackNewReceiverCannotBeSame(ProgramError):
+class SameAdmin(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6010, "New Clawback Receiver cannot be same as old")
+        super().__init__(6007, "New and old admin are identical")
 
-    code = 6010
-    name = "ClawbackNewReceiverCannotBeSame"
-    msg = "New Clawback Receiver cannot be same as old"
-
-
-class NewAdminCannotBeSame(ProgramError):
-    def __init__(self) -> None:
-        super().__init__(6011, "New Admin cannot be same as old")
-
-    code = 6011
-    name = "NewAdminCannotBeSame"
-    msg = "New Admin cannot be same as old"
+    code = 6007
+    name = "SameAdmin"
+    msg = "New and old admin are identical"
 
 
 class ClaimExpired(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6012, "Cannot create claim; claim window expired")
+        super().__init__(6008, "Claim window expired")
 
-    code = 6012
+    code = 6008
     name = "ClaimExpired"
-    msg = "Cannot create claim; claim window expired"
+    msg = "Claim window expired"
 
 
 class ArithmeticError(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6013, "Arithmetic Error (overflow/underflow)")
+        super().__init__(6009, "Arithmetic Error (overflow/underflow)")
 
-    code = 6013
+    code = 6009
     name = "ArithmeticError"
     msg = "Arithmetic Error (overflow/underflow)"
 
 
-class InvalidTimestamp(ProgramError):
+class StartTimestampAfterEnd(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6014, "Invalid Timestamp")
+        super().__init__(6010, "Start Timestamp cannot be after end Timestamp")
 
-    code = 6014
-    name = "InvalidTimestamp"
-    msg = "Invalid Timestamp"
+    code = 6010
+    name = "StartTimestampAfterEnd"
+    msg = "Start Timestamp cannot be after end Timestamp"
 
 
-class InvalidVersion(ProgramError):
+class TimestampsNotInFuture(ProgramError):
     def __init__(self) -> None:
-        super().__init__(6015, "Airdrop Version Mismatch")
+        super().__init__(6011, "Timestamps cannot be in the past")
 
-    code = 6015
-    name = "InvalidVersion"
-    msg = "Airdrop Version Mismatch"
+    code = 6011
+    name = "TimestampsNotInFuture"
+    msg = "Timestamps cannot be in the past"
 
 
 CustomError = typing.Union[
     InsufficientUnlockedTokens,
-    DepositStartTooFarInFuture,
     InvalidProof,
     ExceededMaxClaim,
-    ExceededMaxNumNodes,
+    MaxNodesExceeded,
     Unauthorized,
     OwnerMismatch,
-    ClawbackBeforeVestingEnd,
-    ClawbackBeforeStart,
     ClawbackAlreadyClaimed,
-    ClawbackNewReceiverCannotBeSame,
-    NewAdminCannotBeSame,
+    SameAdmin,
     ClaimExpired,
     ArithmeticError,
-    InvalidTimestamp,
-    InvalidVersion,
+    StartTimestampAfterEnd,
+    TimestampsNotInFuture,
 ]
 CUSTOM_ERROR_MAP: dict[int, CustomError] = {
     6000: InsufficientUnlockedTokens(),
-    6001: DepositStartTooFarInFuture(),
-    6002: InvalidProof(),
-    6003: ExceededMaxClaim(),
-    6004: ExceededMaxNumNodes(),
-    6005: Unauthorized(),
-    6006: OwnerMismatch(),
-    6007: ClawbackBeforeVestingEnd(),
-    6008: ClawbackBeforeStart(),
-    6009: ClawbackAlreadyClaimed(),
-    6010: ClawbackNewReceiverCannotBeSame(),
-    6011: NewAdminCannotBeSame(),
-    6012: ClaimExpired(),
-    6013: ArithmeticError(),
-    6014: InvalidTimestamp(),
-    6015: InvalidVersion(),
+    6001: InvalidProof(),
+    6002: ExceededMaxClaim(),
+    6003: MaxNodesExceeded(),
+    6004: Unauthorized(),
+    6005: OwnerMismatch(),
+    6006: ClawbackAlreadyClaimed(),
+    6007: SameAdmin(),
+    6008: ClaimExpired(),
+    6009: ArithmeticError(),
+    6010: StartTimestampAfterEnd(),
+    6011: TimestampsNotInFuture(),
 }
 
 

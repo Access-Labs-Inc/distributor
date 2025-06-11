@@ -1,35 +1,29 @@
 from __future__ import annotations
 import typing
 from solders.pubkey import Pubkey
-from solders.system_program import ID as SYS_PROGRAM_ID
-from spl.token.constants import TOKEN_PROGRAM_ID
 from solders.instruction import Instruction, AccountMeta
 from ..program_id import PROGRAM_ID
 
 
-class ClawbackAccounts(typing.TypedDict):
+class SetAdminAccounts(typing.TypedDict):
     distributor: Pubkey
-    from_: Pubkey
-    to: Pubkey
     admin: Pubkey
+    new_admin: Pubkey
 
 
-def clawback(
-    accounts: ClawbackAccounts,
+def set_admin(
+    accounts: SetAdminAccounts,
     program_id: Pubkey = PROGRAM_ID,
     remaining_accounts: typing.Optional[typing.List[AccountMeta]] = None,
 ) -> Instruction:
     keys: list[AccountMeta] = [
         AccountMeta(pubkey=accounts["distributor"], is_signer=False, is_writable=True),
-        AccountMeta(pubkey=accounts["from_"], is_signer=False, is_writable=True),
-        AccountMeta(pubkey=accounts["to"], is_signer=False, is_writable=True),
         AccountMeta(pubkey=accounts["admin"], is_signer=True, is_writable=True),
-        AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
-        AccountMeta(pubkey=TOKEN_PROGRAM_ID, is_signer=False, is_writable=False),
+        AccountMeta(pubkey=accounts["new_admin"], is_signer=False, is_writable=True),
     ]
     if remaining_accounts is not None:
         keys += remaining_accounts
-    identifier = b"o\\\x8eO!\xeaR\x1b"
+    identifier = b"\xfb\xa3\x004[\xc2\xbb\\"
     encoded_args = b""
     data = identifier + encoded_args
     return Instruction(program_id, data, keys)

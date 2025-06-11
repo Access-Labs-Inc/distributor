@@ -25,12 +25,13 @@ pub struct Clawback<'info> {
     pub from: Account<'info, TokenAccount>,
 
     /// The Clawback token account.
-    #[account(mut, address = distributor.clawback_receiver)]
+    #[account(mut)]
     pub to: Account<'info, TokenAccount>,
 
-    /// Claimant account
-    /// Anyone can claw back the funds
-    pub claimant: Signer<'info>,
+    /// Admin account
+    /// Only admin can claw back
+    #[account(mut, address = distributor.admin @ ErrorCode::Unauthorized)]
+    pub admin: Signer<'info>,
 
     /// The [System] program.
     pub system_program: Program<'info, System>,
@@ -40,26 +41,18 @@ pub struct Clawback<'info> {
 }
 
 /// Claws back unclaimed tokens by:
-/// 1. Checking that the lockup has expired
-/// 2. Transferring remaining funds from the vault to the clawback receiver
-/// 3. Marking the distributor as clawed back
-/// CHECK:
-///     1. The distributor has not already been clawed back
+/// 1. Transferring remaining funds from the vault to the clawback receiver
+/// 2. Marking the distributor as clawed back
 #[allow(clippy::result_large_err)]
 pub fn handle_clawback(ctx: Context<Clawback>) -> Result<()> {
     let distributor = &ctx.accounts.distributor;
 
     require!(!distributor.clawed_back, ErrorCode::ClawbackAlreadyClaimed);
 
-    let curr_ts = Clock::get()?.unix_timestamp;
-
-    if curr_ts < distributor.clawback_start_ts {
-        return Err(ErrorCode::ClawbackBeforeStart.into());
-    }
-
     let seeds = [
         b"MerkleDistributor".as_ref(),
         &distributor.mint.to_bytes(),
+        &distributor.creator.to_bytes(),
         &distributor.version.to_le_bytes(),
         &[ctx.accounts.distributor.bump],
     ];

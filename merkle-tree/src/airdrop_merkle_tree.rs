@@ -6,8 +6,8 @@ use std::{
     result,
 };
 
+use access_merkle_verify::verify;
 use indexmap::IndexMap;
-use jito_merkle_verify::verify;
 use serde::{Deserialize, Serialize};
 use solana_program::{hash::hashv, pubkey::Pubkey};
 
@@ -47,30 +47,11 @@ impl AirdropMerkleTree {
                 .entry(claimant)
                 .and_modify(|n| {
                     println!("duplicate claimant {} found, combining", n.claimant);
-                    n.total_unlocked_staker = n
-                        .total_unlocked_staker
-                        .checked_add(tree_node.total_unlocked_staker)
+                    n.total_unlocked = n
+                        .total_unlocked
+                        .checked_add(tree_node.total_unlocked)
                         .unwrap();
-                    n.total_locked_staker = n
-                        .total_locked_staker
-                        .checked_add(tree_node.total_locked_staker)
-                        .unwrap();
-                    n.total_unlocked_searcher = n
-                        .total_unlocked_searcher
-                        .checked_add(tree_node.total_unlocked_searcher)
-                        .unwrap();
-                    n.total_locked_searcher = n
-                        .total_locked_searcher
-                        .checked_add(tree_node.total_locked_searcher)
-                        .unwrap();
-                    n.total_unlocked_validator = n
-                        .total_unlocked_validator
-                        .checked_add(tree_node.total_unlocked_validator)
-                        .unwrap();
-                    n.total_locked_validator = n
-                        .total_locked_validator
-                        .checked_add(tree_node.total_locked_validator)
-                        .unwrap();
+                    n.total_locked = n.total_locked.checked_add(tree_node.total_locked).unwrap();
                 })
                 .or_insert_with(|| tree_node); // If not exists, insert a new entry
         }
@@ -263,12 +244,8 @@ mod tests {
             tree_nodes.push(TreeNode {
                 claimant: new_test_key(),
                 proof: None,
-                total_unlocked_staker: rand_balance(),
-                total_locked_staker: rand_balance(),
-                total_unlocked_searcher: rand_balance(),
-                total_locked_searcher: rand_balance(),
-                total_unlocked_validator: rand_balance(),
-                total_locked_validator: rand_balance(),
+                total_unlocked: rand_balance(),
+                total_locked: rand_balance(),
             });
         }
 
@@ -282,12 +259,8 @@ mod tests {
         let tree_nodes = vec![TreeNode {
             claimant: Pubkey::default(),
             proof: None,
-            total_unlocked_staker: 2,
-            total_locked_staker: 3,
-            total_unlocked_searcher: 4,
-            total_locked_searcher: 5,
-            total_unlocked_validator: 6,
-            total_locked_validator: 7,
+            total_unlocked: 2,
+            total_locked: 3,
         }];
         let merkle_tree = AirdropMerkleTree::new(tree_nodes).unwrap();
         assert!(merkle_tree.verify_proof().is_ok(), "verify failed");
@@ -300,32 +273,20 @@ mod tests {
             TreeNode {
                 claimant: pubkey!("FLYqJsmJ5AGMxMxK3Qy1rSen4ES2dqqo6h51W3C1tYS"),
                 proof: None,
-                total_unlocked_staker: (100 * u64::pow(10, 9)),
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
+                total_unlocked: (100 * u64::pow(10, 9)),
+                total_locked: (100 * u64::pow(10, 9)),
             },
             TreeNode {
                 claimant: pubkey!("EDGARWktv3nDxRYjufjdbZmryqGXceaFPoPpbUzdpqED"),
                 proof: None,
-                total_unlocked_staker: 100 * u64::pow(10, 9),
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
+                total_unlocked: 100 * u64::pow(10, 9),
+                total_locked: (100 * u64::pow(10, 9)),
             },
             TreeNode {
                 claimant: pubkey!("EDGARWktv3nDxRYjufjdbZmryqGXceaFPoPpbUzdpqEH"),
                 proof: None,
-                total_locked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_staker: (100 * u64::pow(10, 9)),
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
+                total_locked: (100 * u64::pow(10, 9)),
+                total_unlocked: (100 * u64::pow(10, 9)),
             },
         ];
 
@@ -354,43 +315,27 @@ mod tests {
             TreeNode {
                 claimant: duplicate_pubkey,
                 proof: None,
-                total_unlocked_staker: 10,
-                total_locked_staker: 20,
-                total_unlocked_searcher: 30,
-                total_locked_searcher: 40,
-                total_unlocked_validator: 50,
-                total_locked_validator: 60,
+                total_unlocked: 10,
+                total_locked: 20,
             },
             TreeNode {
                 claimant: duplicate_pubkey,
                 proof: None,
-                total_unlocked_staker: 1,
-                total_locked_staker: 2,
-                total_unlocked_searcher: 3,
-                total_locked_searcher: 4,
-                total_unlocked_validator: 5,
-                total_locked_validator: 6,
+                total_unlocked: 1,
+                total_locked: 2,
             },
             TreeNode {
                 claimant: Pubkey::new_unique(),
                 proof: None,
-                total_unlocked_staker: 0,
-                total_locked_staker: 0,
-                total_unlocked_searcher: 0,
-                total_locked_searcher: 0,
-                total_unlocked_validator: 0,
-                total_locked_validator: 0,
+                total_unlocked: 0,
+                total_locked: 0,
             },
         ];
 
         let tree = AirdropMerkleTree::new(tree_nodes).unwrap();
         // Assert that the merkle distributor correctly combines the two tree nodes
         assert_eq!(tree.tree_nodes.len(), 2);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_staker, 11);
-        assert_eq!(tree.tree_nodes[0].total_locked_staker, 22);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_searcher, 33);
-        assert_eq!(tree.tree_nodes[0].total_locked_searcher, 44);
-        assert_eq!(tree.tree_nodes[0].total_unlocked_validator, 55);
-        assert_eq!(tree.tree_nodes[0].total_locked_validator, 66);
+        assert_eq!(tree.tree_nodes[0].total_unlocked, 11);
+        assert_eq!(tree.tree_nodes[0].total_locked, 22);
     }
 }
