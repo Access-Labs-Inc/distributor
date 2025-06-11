@@ -20,7 +20,7 @@ codegen-units = 1
 [workspace.package]
 version = "0.0.1"
 authors = ["Jito Labs <team@jito.wtf>", "Access Labs Inc. <andreas@accessprotocol.co>"]
-repository = "https://github.com/Access-Labs-Inc/merkle-distributor"
+repository = "https://github.com/Access-Labs-Inc/distributor"
 homepage = "accessprotocol.co"
 license = ""
 edition = "2021"

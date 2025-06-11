@@ -24,10 +24,10 @@ security_txt! {
     name: "Merkle Distributor",
     project_url: "https://accessprotocol.co",
     contacts: "email:support@accessprotocol.co",
-    policy: "https://github.com/Access-Labs-Inc/merkle-distributor",
+    policy: "https://github.com/Access-Labs-Inc/distributor",
     // Optional Fields
     preferred_languages: "en",
-    source_code: "https://github.com/Access-Labs-Inc/merkle-distributor"
+    source_code: "https://github.com/Access-Labs-Inc/distributor"
 }
 
 declare_id!("ADis3cccJHS6dmj8MPCG1NGGuXBN2ZSaaXFwKKU7UUgF");

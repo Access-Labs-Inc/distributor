@@ -3,7 +3,7 @@ name = "merkle-distributor"
 version = { workspace = true }
 description = "A Solana program for distributing tokens according to a Merkle root."
 edition = { workspace = true }
-repository = "https://github.com/Access-Labs-Inc/merkle-distributor"
+repository = "https://github.com/Access-Labs-Inc/distributor"
 authors = ["Jito Labs <team@jito.wtf>", "Access Labs Inc. <andreas@accessprotocol.co>"]
 license = "GPL-3.0"
 
