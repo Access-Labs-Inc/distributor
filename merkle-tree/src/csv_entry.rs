@@ -44,9 +44,9 @@ mod tests {
 
         assert_eq!(
             entries[0].pubkey,
-            "4SX6nqv5VRLMoNfYM5phvHgcBNcBEwUEES4qPPjf1EqS"
+            "R1BxX5NpJzjFJNNW5Fttn4asjjMTvqrgc21i6YivCds"
         );
-        assert_eq!(entries[0].amount_unlocked, 1000);
-        assert_eq!(entries[0].amount_locked, 500);
+        assert_eq!(entries[0].amount_unlocked, 1000000000);
+        assert_eq!(entries[0].amount_locked, 500000000);
     }
 }
