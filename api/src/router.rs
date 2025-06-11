@@ -6,6 +6,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
+use access_merkle_tree::{tree_node::TreeNode, utils::get_claim_status_pda};
 use anchor_lang::AccountDeserialize;
 use axum::{
     body::Body,
@@ -16,7 +17,6 @@ use axum::{
     Json, Router,
 };
 use http::Request;
-use jito_merkle_tree::{tree_node::TreeNode, utils::get_claim_status_pda};
 use merkle_distributor::state::{
     claim_status::ClaimStatus as MerkleDistributorClaimStatus,
     merkle_distributor::MerkleDistributor,
@@ -150,16 +150,12 @@ async fn get_claim_status(
                     &mut claim_status_account.data.as_slice(),
                 ) {
                     // claimed some, but its expired now, so no more locked funds can be withdrawn
-                    Ok(claim_status) => Ok(ClaimStatus {
+                    Ok(_claim_status) => Ok(ClaimStatus {
                         status: Status::Expired,
-                        total_unlocked_staker: node.total_unlocked_staker,
-                        total_locked_staker: node.total_locked_staker,
-                        total_unlocked_searcher: node.total_unlocked_searcher,
-                        total_locked_searcher: node.total_locked_searcher,
-                        total_unlocked_validator: node.total_unlocked_validator,
-                        total_locked_validator: node.total_locked_validator,
-                        amount_locked_withdrawable: 0, // expired, too bad
-                        amount_locked_withdrawn: claim_status.locked_amount_withdrawn,
+                        total_unlocked: node.total_unlocked,
+                        total_locked: node.total_locked,
+                        amount_locked_withdrawable: 0,
+                        amount_locked_withdrawn: 0,
                     }),
                     // account parsing error, assume they didn't claim.
                     // let them know what could have been but it's expired
@@ -167,14 +163,10 @@ async fn get_claim_status(
                         warn!("error reading ClaimStatus: {:?}", e);
                         Ok(ClaimStatus {
                             status: Status::Expired,
-                            total_unlocked_staker: node.total_unlocked_staker,
-                            total_locked_staker: node.total_locked_staker,
-                            total_unlocked_searcher: node.total_unlocked_searcher,
-                            total_locked_searcher: node.total_locked_searcher,
-                            total_unlocked_validator: node.total_unlocked_validator,
-                            total_locked_validator: node.total_locked_validator,
-                            amount_locked_withdrawable: 0, // expired, too bad
-                            amount_locked_withdrawn: 0, /* never withdrew any because account doesn't exist */
+                            total_unlocked: node.total_unlocked,
+                            total_locked: node.total_locked,
+                            amount_locked_withdrawable: 0,
+                            amount_locked_withdrawn: 0,
                         })
                     }
                 }
@@ -182,12 +174,8 @@ async fn get_claim_status(
             // never claimed, let them know what could have been but it's expired now
             None => Ok(ClaimStatus {
                 status: Status::Expired,
-                total_unlocked_staker: node.total_unlocked_staker,
-                total_locked_staker: node.total_locked_staker,
-                total_unlocked_searcher: node.total_unlocked_searcher,
-                total_locked_searcher: node.total_locked_searcher,
-                total_unlocked_validator: node.total_unlocked_validator,
-                total_locked_validator: node.total_locked_validator,
+                total_unlocked: node.total_unlocked,
+                total_locked: node.total_locked,
                 amount_locked_withdrawable: 0,
                 amount_locked_withdrawn: 0,
             }),
@@ -201,12 +189,8 @@ async fn get_claim_status(
                     // claimed, but might still have some locked tokens
                     Ok(claim_status) => Ok(ClaimStatus {
                         status: Status::Claimed,
-                        total_unlocked_staker: node.total_unlocked_staker,
-                        total_locked_staker: node.total_locked_staker,
-                        total_unlocked_searcher: node.total_unlocked_searcher,
-                        total_locked_searcher: node.total_locked_searcher,
-                        total_unlocked_validator: node.total_unlocked_validator,
-                        total_locked_validator: node.total_locked_validator,
+                        total_unlocked: node.total_unlocked,
+                        total_locked: node.total_locked,
                         amount_locked_withdrawable: claim_status
                             .amount_withdrawable(
                                 SystemTime::now()
@@ -224,19 +208,10 @@ async fn get_claim_status(
                         warn!("error reading ClaimStatus: {:?}", e);
                         Ok(ClaimStatus {
                             status: Status::Unclaimed,
-                            total_unlocked_staker: node.total_unlocked_staker,
-                            total_locked_staker: node.total_locked_staker,
-                            total_unlocked_searcher: node.total_unlocked_searcher,
-                            total_locked_searcher: node.total_locked_searcher,
-                            total_unlocked_validator: node.total_unlocked_validator,
-                            total_locked_validator: node.total_locked_validator,
+                            total_unlocked: node.total_unlocked,
+                            total_locked: node.total_locked,
                             amount_locked_withdrawable: MerkleDistributorClaimStatus {
-                                locked_amount: node
-                                    .total_locked_staker
-                                    .checked_add(node.total_locked_searcher)
-                                    .unwrap()
-                                    .checked_add(node.total_locked_validator)
-                                    .unwrap(),
+                                locked_amount: node.total_locked,
                                 // haven't claimed yet, so none withdrawn
                                 locked_amount_withdrawn: 0,
                                 // the rest of the fields don't matter
@@ -260,19 +235,10 @@ async fn get_claim_status(
                 // haven't claimed yet. might have some claimable tokens
                 Ok(ClaimStatus {
                     status: Status::Unclaimed,
-                    total_unlocked_staker: node.total_unlocked_staker,
-                    total_locked_staker: node.total_locked_staker,
-                    total_unlocked_searcher: node.total_unlocked_searcher,
-                    total_locked_searcher: node.total_locked_searcher,
-                    total_unlocked_validator: node.total_unlocked_validator,
-                    total_locked_validator: node.total_locked_validator,
+                    total_unlocked: node.total_unlocked,
+                    total_locked: node.total_locked,
                     amount_locked_withdrawable: MerkleDistributorClaimStatus {
-                        locked_amount: node
-                            .total_locked_staker
-                            .checked_add(node.total_locked_searcher)
-                            .unwrap()
-                            .checked_add(node.total_locked_validator)
-                            .unwrap(),
+                        locked_amount: node.total_locked,
                         // haven't claimed yet, so none withdrawn
                         locked_amount_withdrawn: 0,
                         // the rest of the fields don't matter
@@ -355,12 +321,10 @@ struct Distributor {
     pub start_ts: i64,
     /// Lockup time end (Unix Timestamp)
     pub end_ts: i64,
-    /// Clawback start (Unix Timestamp)
-    pub clawback_start_ts: i64,
-    /// Clawback receiver
-    pub clawback_receiver: Pubkey,
     /// Admin wallet
     pub admin: Pubkey,
+    /// Creator wallet
+    pub creator: Pubkey,
     /// Whether or not the distributor has been clawed back
     pub clawed_back: bool,
 }
@@ -380,8 +344,7 @@ async fn get_distributor(State(state): State<Arc<RouterState>>) -> Result<Json<D
         num_nodes_claimed: d.num_nodes_claimed,
         start_ts: d.start_ts,
         end_ts: d.end_ts,
-        clawback_start_ts: d.clawback_start_ts,
-        clawback_receiver: d.clawback_receiver,
+        creator: d.creator,
         admin: d.admin,
         clawed_back: d.clawed_back,
     }))
@@ -414,7 +377,7 @@ async fn get_version(State(state): State<Arc<RouterState>>) -> Result<impl IntoR
 }
 
 async fn root() -> impl IntoResponse {
-    "Jito Airdrop API"
+    "Access Airdrop API"
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -434,14 +397,10 @@ enum Status {
 #[derive(Serialize, Deserialize, Debug)]
 struct ClaimStatus {
     pub status: Status,
-    pub total_unlocked_staker: u64,
-    pub total_locked_staker: u64,
-    pub total_unlocked_searcher: u64,
-    pub total_locked_searcher: u64,
-    pub total_unlocked_validator: u64,
-    pub total_locked_validator: u64,
-    pub amount_locked_withdrawable: u64,
+    pub total_unlocked: u64,
+    pub total_locked: u64,
     pub amount_locked_withdrawn: u64,
+    pub amount_locked_withdrawable: u64,
 }
 
 #[cfg(test)]
@@ -454,12 +413,8 @@ mod tests {
         let status = Status::Claimed;
         let claim_status = ClaimStatus {
             status,
-            total_unlocked_searcher: 100,
-            total_locked_searcher: 100,
-            total_unlocked_staker: 0,
-            total_locked_staker: 0,
-            total_unlocked_validator: 0,
-            total_locked_validator: 0,
+            total_unlocked: 100,
+            total_locked: 100,
             amount_locked_withdrawable: 100,
             amount_locked_withdrawn: 0,
         };

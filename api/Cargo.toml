@@ -1,5 +1,5 @@
 [package]
-name = "jito-airdrop-api"
+name = "access-airdrop-api"
 version = { workspace = true }
 edition = { workspace = true }
 

@@ -28,14 +28,14 @@ pub fn get_max_total_claim(nodes: &[TreeNode]) -> u64 {
 pub fn get_merkle_distributor_pda(
     program_id: &Pubkey,
     mint: &Pubkey,
-    admin: &Pubkey,
+    creator: &Pubkey,
     version: u64,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             b"MerkleDistributor".as_ref(),
             mint.as_ref(),
-            admin.as_ref(),
+            creator.as_ref(),
             version.to_le_bytes().as_ref(),
         ],
         program_id,

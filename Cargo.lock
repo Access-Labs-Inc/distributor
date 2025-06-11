@@ -13,6 +13,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "access-airdrop-api"
+version = "0.0.1"
+dependencies = [
+ "access-merkle-tree",
+ "anchor-lang",
+ "axum",
+ "clap",
+ "http",
+ "merkle-distributor",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "solana-program",
+ "solana-rpc-client",
+ "solana-rpc-client-api",
+ "spl-associated-token-account 2.2.0",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-core",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "access-merkle-tree"
 version = "0.0.1"
 dependencies = [
@@ -1802,32 +1828,6 @@ name = "itoa"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
-
-[[package]]
-name = "jito-airdrop-api"
-version = "0.0.1"
-dependencies = [
- "access-merkle-tree",
- "anchor-lang",
- "axum",
- "clap",
- "http",
- "merkle-distributor",
- "serde",
- "serde_derive",
- "serde_json",
- "solana-program",
- "solana-rpc-client",
- "solana-rpc-client-api",
- "spl-associated-token-account 2.2.0",
- "thiserror",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-core",
- "tracing-subscriber",
-]
 
 [[package]]
 name = "jito-scripts"

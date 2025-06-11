@@ -8,7 +8,7 @@ env:
   SOLANA_CLI_VERSION: 1.16.17
 jobs:
   release:
-    name: Create the jito programs release
+    name: Create the access programs release
     runs-on: big-runner-1
 
     steps:

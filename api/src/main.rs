@@ -3,8 +3,10 @@ mod router;
 
 use std::{fmt::Debug, net::SocketAddr, path::PathBuf, str::FromStr, sync::Arc};
 
+use access_merkle_tree::{
+    airdrop_merkle_tree::AirdropMerkleTree, utils::get_merkle_distributor_pda,
+};
 use clap::Parser;
-use jito_merkle_tree::{airdrop_merkle_tree::AirdropMerkleTree, utils::get_merkle_distributor_pda};
 use router::RouterState;
 use solana_program::pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
@@ -33,6 +35,10 @@ pub struct Args {
     #[clap(long, env)]
     mint: Pubkey,
 
+    /// Creator address
+    #[clap(long, env)]
+    creator: Pubkey,
+
     /// Program ID
     #[clap(long, env)]
     program_id: Pubkey,
@@ -60,15 +66,21 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let rpc_client = RpcClient::new(args.rpc_url.clone());
     info!("started rpc client at {}", args.rpc_url);
 
-    let (merkle_distributor, _bump) =
-        get_merkle_distributor_pda(&args.program_id, &args.mint, args.airdrop_version);
+    let (merkle_distributor, _bump) = get_merkle_distributor_pda(
+        &args.program_id,
+        &args.mint,
+        &args.creator,
+        args.airdrop_version,
+    );
 
     let distributor = read_distributor(&rpc_client, &merkle_distributor).await?;
 
     info!("distributor: {:?}", distributor);
 
+    let tree = AirdropMerkleTree::new_from_file(&args.merkle_tree_path)?.convert_to_hashmap();
+
     let state = Arc::new(RouterState {
-        tree: AirdropMerkleTree::new_from_file(&args.merkle_tree_path)?.convert_to_hashmap(),
+        tree,
         program_id: args.program_id,
         distributor_pubkey: merkle_distributor,
         rpc_client,
