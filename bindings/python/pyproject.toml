@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "access-distributor"
+version = "0.1.0"
+description = "Python bindings for the Access Distributor Solana program"
+requires-python = ">=3.8"
+dependencies = [
+    "solders",
+    "borsh-construct",
+    "anchorpy",
+]
+
+[tool.setuptools]
+packages = ["access_distributor"]
+
+[project.urls]
+Repository = "https://github.com/Access-Labs-Inc/distributor" 

@@ -29,7 +29,7 @@ pub struct MerkleDistributor {
     pub start_ts: i64,
     /// Lockup time end (Unix Timestamp)
     pub end_ts: i64,
-    /// Creatorwallet
+    /// Creator wallet
     pub creator: Pubkey,
     /// Admin wallet
     pub admin: Pubkey,

@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: access-distributor
+Version: 0.1.0
+Summary: Python bindings for the Access Distributor Solana program
+Project-URL: Repository, https://github.com/Access-Labs-Inc/distributor
+Requires-Python: >=3.8
+Requires-Dist: solders
+Requires-Dist: borsh-construct
+Requires-Dist: anchorpy

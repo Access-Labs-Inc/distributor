@@ -52,7 +52,7 @@
         },
         {
           "name": "tokenVault",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false,
           "docs": [
             "Token vault"
