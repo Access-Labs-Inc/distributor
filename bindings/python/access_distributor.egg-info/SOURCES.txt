@@ -1,8 +1,0 @@
-pyproject.toml
-access_distributor/__init__.py
-access_distributor/program_id.py
-access_distributor.egg-info/PKG-INFO
-access_distributor.egg-info/SOURCES.txt
-access_distributor.egg-info/dependency_links.txt
-access_distributor.egg-info/requires.txt
-access_distributor.egg-info/top_level.txt

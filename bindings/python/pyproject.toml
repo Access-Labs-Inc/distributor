@@ -1,13 +1,25 @@
+[tool.poetry]
+name = "access-distributor"
+version = "0.1.1"
+description = "Python bindings for the Access Distributor Solana program"
+authors = ["Access Labs <vladislav@accessprotocol.co>"]
+packages = [{ include = "access_distributor" }]
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+solders = "*"
+borsh-construct = "*"
+anchorpy = "*"
+
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "access-distributor"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python bindings for the Access Distributor Solana program"
 requires-python = ">=3.8"
-metadata-version = "2.3"
 dependencies = [
     "solders",
     "borsh-construct",
