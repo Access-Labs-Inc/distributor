@@ -110,6 +110,15 @@ class TimestampsNotInFuture(ProgramError):
     msg = "Timestamps cannot be in the past"
 
 
+class InsufficientFunds(ProgramError):
+    def __init__(self) -> None:
+        super().__init__(6012, "Insufficient funds")
+
+    code = 6012
+    name = "InsufficientFunds"
+    msg = "Insufficient funds"
+
+
 CustomError = typing.Union[
     InsufficientUnlockedTokens,
     InvalidProof,
@@ -123,6 +132,7 @@ CustomError = typing.Union[
     ArithmeticError,
     StartTimestampAfterEnd,
     TimestampsNotInFuture,
+    InsufficientFunds,
 ]
 CUSTOM_ERROR_MAP: dict[int, CustomError] = {
     6000: InsufficientUnlockedTokens(),
@@ -137,6 +147,7 @@ CUSTOM_ERROR_MAP: dict[int, CustomError] = {
     6009: ArithmeticError(),
     6010: StartTimestampAfterEnd(),
     6011: TimestampsNotInFuture(),
+    6012: InsufficientFunds(),
 }
 
 

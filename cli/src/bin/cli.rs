@@ -12,6 +12,7 @@ use anchor_spl::token;
 use clap::{Parser, Subcommand};
 use merkle_distributor::state::merkle_distributor::MerkleDistributor;
 use solana_program::instruction::Instruction;
+use solana_program::system_instruction;
 use solana_rpc_client::rpc_client::RpcClient;
 use solana_sdk::{
     account::Account, commitment_config::CommitmentConfig,
@@ -71,6 +72,10 @@ pub enum Commands {
     SetAdmin(SetAdminArgs),
     /// Print the derived distributor PDA
     DistributorPda,
+    /// Withdraw SOL from custody PDA
+    WithdrawCustodySol(WithdrawCustodySolArgs),
+    /// Stake SOL to custody PDA
+    StakeCustodySol(StakeCustodySolArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -129,6 +134,20 @@ pub struct SetAdminArgs {
     pub new_admin: Pubkey,
 }
 
+#[derive(Parser, Debug)]
+pub struct WithdrawCustodySolArgs {
+    /// Amount to withdraw (lamports)
+    #[clap(long, env)]
+    pub amount: u64,
+}
+
+#[derive(Parser, Debug)]
+pub struct StakeCustodySolArgs {
+    /// Amount to stake (lamports)
+    #[clap(long, env)]
+    pub amount: u64,
+}
+
 fn main() {
     let args = Args::parse();
 
@@ -148,6 +167,12 @@ fn main() {
         }
         Commands::DistributorPda => {
             process_distributor_pda(&args);
+        }
+        Commands::WithdrawCustodySol(withdraw_args) => {
+            process_withdraw_custody_sol(&args, withdraw_args);
+        }
+        Commands::StakeCustodySol(stake_args) => {
+            process_stake_custody_sol(&args, stake_args);
         }
     }
 }
@@ -500,4 +525,55 @@ fn process_distributor_pda(args: &Args) {
         args.airdrop_version,
     );
     println!("{distributor_pubkey}");
+}
+
+fn process_withdraw_custody_sol(args: &Args, withdraw_args: &WithdrawCustodySolArgs) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let owner = keypair.pubkey();
+    let program_id = args.program_id;
+
+    let (sol_custody, _bump) =
+        Pubkey::find_program_address(&[b"SolCustody", owner.as_ref()], &program_id);
+
+    let accounts = vec![
+        solana_sdk::instruction::AccountMeta::new(sol_custody, false),
+        solana_sdk::instruction::AccountMeta::new(owner, true),
+        solana_sdk::instruction::AccountMeta::new(solana_program::system_program::ID, false),
+    ];
+
+    let ix = Instruction {
+        program_id,
+        accounts,
+        data: merkle_distributor::instruction::WithdrawCustodySol {
+            amount_lamports: withdraw_args.amount,
+        }
+        .data(),
+    };
+
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+    let blockhash = client.get_latest_blockhash().unwrap();
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&owner), &[&keypair], blockhash);
+    let sig = client
+        .send_and_confirm_transaction_with_spinner(&tx)
+        .unwrap();
+    println!("Successfully withdrew SOL! signature: {sig:#?}");
+}
+
+fn process_stake_custody_sol(args: &Args, stake_args: &StakeCustodySolArgs) {
+    let keypair = read_keypair_file(&args.keypair_path).expect("Failed reading keypair file");
+    let owner = keypair.pubkey();
+    let program_id = args.program_id;
+
+    let (sol_custody, _bump) =
+        Pubkey::find_program_address(&[b"SolCustody", owner.as_ref()], &program_id);
+
+    let ix = system_instruction::transfer(&owner, &sol_custody, stake_args.amount);
+
+    let client = RpcClient::new_with_commitment(&args.rpc_url, CommitmentConfig::confirmed());
+    let blockhash = client.get_latest_blockhash().unwrap();
+    let tx = Transaction::new_signed_with_payer(&[ix], Some(&owner), &[&keypair], blockhash);
+    let sig = client
+        .send_and_confirm_transaction_with_spinner(&tx)
+        .unwrap();
+    println!("Successfully staked SOL! signature: {sig:#?}");
 }

@@ -81,4 +81,12 @@ pub mod merkle_distributor {
     pub fn set_admin(ctx: Context<SetAdmin>) -> Result<()> {
         handle_set_admin(ctx)
     }
+
+    #[allow(clippy::result_large_err)]
+    pub fn withdraw_custody_sol(
+        ctx: Context<WithdrawCustodySol>,
+        amount_lamports: u64,
+    ) -> Result<()> {
+        handle_withdraw_custody_sol(ctx, amount_lamports)
+    }
 }
