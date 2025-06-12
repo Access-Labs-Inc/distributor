@@ -385,6 +385,47 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "withdrawCustodySol",
+      "accounts": [
+        {
+          "name": "solCustody",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "[SolCustody].\\"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "type": "string",
+                "value": "SolCustody"
+              },
+              {
+                "kind": "account",
+                "type": "publicKey",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true,
+          "docs": [
+            "The owner of the sol custody."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "amountLamports",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
