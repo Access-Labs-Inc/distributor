@@ -27,4 +27,6 @@ pub enum ErrorCode {
     StartTimestampAfterEnd,
     #[msg("Timestamps cannot be in the past")]
     TimestampsNotInFuture,
+    #[msg("Insufficient funds")]
+    InsufficientFunds,
 }
