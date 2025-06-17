@@ -5,3 +5,4 @@ export type {
   MerkleDistributorFields,
   MerkleDistributorJSON,
 } from "./MerkleDistributor"
+export { SolCustody } from "./SolCustody"
