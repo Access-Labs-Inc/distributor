@@ -1,0 +1,61 @@
+{
+  "name": "@accessprotocol/distributor",
+  "version": "0.2.0",
+  "description": "Access Protocol Distributor Library",
+  "type": "module",
+  "repository": {
+    "type": "git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/types/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/types/index.d.ts",
+        "default": "./dist/cjs/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist/esm/*",
+    "dist/cjs/*",
+    "dist/esm/types/*",
+    "dist/cjs/types/*",
+    "package.json",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./dist",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -p ./tsconfig.esm.json",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json"
+  },
+  "keywords": [
+    "access-protocol",
+    "distributor"
+  ],
+  "author": "Access Labs",
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0",
+    "@types/istanbul-reports": "^3.0.4",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.0.0"
+  },
+  "dependencies": {
+    "@coral-xyz/borsh": "^0.31.1",
+    "@solana/spl-token": "^0.1.8",
+    "@solana/web3.js": "^1.87.3",
+    "bn.js": "^5.2.2"
+  }
+}
