@@ -59,6 +59,9 @@ impl AirdropMerkleTree {
         // Convert IndexMap back to Vec while preserving the order
         let mut tree_nodes: Vec<TreeNode> = tree_nodes_map.values().cloned().collect();
 
+        // Sort by claimant pubkey for deterministic order
+        tree_nodes.sort_by_key(|n| n.claimant);
+
         let hashed_nodes = tree_nodes
             .iter()
             .map(|claim_info| claim_info.hash().to_bytes())
