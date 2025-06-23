@@ -26,7 +26,7 @@ export function newDistributor(
     tokenProgram: PublicKey = TOKEN_PROGRAM_ID,
 ) {
     const distributor = MerkleDistributor.getAddress(creator, mint, version, programId)
-    const tokenVault = getAssociatedTokenAddressSync(mint, distributor)
+    const tokenVault = getAssociatedTokenAddressSync(mint, distributor, true)
 
     return newDistributorRaw(
         { version, root, maxTotalClaim, maxNumNodes, startVestingTs, endVestingTs },

@@ -118,7 +118,7 @@ export class MerkleDistributor {
   ])
 
   static readonly getAddress = (creator: PublicKey, mint: PublicKey, version: BN, programId: PublicKey = PROGRAM_ID) => {
-    return PublicKey.findProgramAddressSync([Buffer.from("MerkleDistributor"), mint.toBuffer(), creator.toBuffer(), version.toBuffer()], programId)[0]
+    return PublicKey.findProgramAddressSync([Buffer.from("MerkleDistributor"), mint.toBuffer(), creator.toBuffer(), version.toArrayLike(Buffer, "le", 8)], programId)[0]
   }
 
   constructor(fields: MerkleDistributorFields) {
