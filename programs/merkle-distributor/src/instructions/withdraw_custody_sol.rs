@@ -40,9 +40,7 @@ pub fn handle_withdraw_custody_sol(
     // Create the transfer instruction
     let transfer_instruction = system_instruction::transfer(ctx.accounts.sol_custody.key, ctx.accounts.owner.key, amount_lamports);
 
-
-
-    // claim rewards
+    // Create the signer seeds
     let bump_seed = [*ctx.bumps.get("sol_custody").unwrap()];
     let signer_seeds: &[&[&[u8]]] = &[&[
         "SolCustody".as_bytes(),
@@ -50,8 +48,7 @@ pub fn handle_withdraw_custody_sol(
         &bump_seed.as_ref(),
     ]];
 
-    // Invoke the transfer instruction
-    
+    // Invoke the transfer instruction    
     anchor_lang::solana_program::program::invoke_signed(
         &transfer_instruction,
         &[
@@ -61,7 +58,6 @@ pub fn handle_withdraw_custody_sol(
         ],
         &signer_seeds
     )?;
-
 
     Ok(())
 }
